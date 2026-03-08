@@ -17,7 +17,6 @@ db = SQLAlchemy(app)
 EMAIL_ADDRESS = "pdhanadeshik2889@gmail.com"
 EMAIL_PASSWORD = "kouh nluw addr lcwv"
 
-
 def send_email(receiver, subject, message):
 
     try:
@@ -28,7 +27,7 @@ def send_email(receiver, subject, message):
         msg["From"] = EMAIL_ADDRESS
         msg["To"] = receiver
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com",587)
 
         server.starttls()
 
@@ -71,26 +70,26 @@ class Attendance(db.Model):
 
 
 # ==============================
-# BUS DATA STORAGE
+# BUS DATA
 # ==============================
 
 bus_data = {
-    "lat": 0,
-    "lng": 0,
-    "speed": 0,
-    "rash": "Driving Normal",
-    "accident": "Safe",
-    "students_onboard": []
+    "lat":0,
+    "lng":0,
+    "speed":0,
+    "rash":"Driving Normal",
+    "accident":"Safe",
+    "students_onboard":[]
 }
 
 route_history = []
 
-# Prevent duplicate emails
-last_uid = None
+# store latest scanned card
+last_scanned_uid = None
 
 
 # ==============================
-# ESP32 UPDATE ENDPOINT
+# ESP32 DATA ENDPOINT
 # ==============================
 
 @app.route('/update', methods=['POST'])
@@ -98,7 +97,7 @@ def update():
 
     global bus_data
     global route_history
-    global last_uid
+    global last_scanned_uid
 
     data = request.json
 
@@ -106,30 +105,24 @@ def update():
 
         bus_data = data
 
-        # Save route history
         route_history.append({
-            "lat": data["lat"],
-            "lng": data["lng"]
+            "lat":data["lat"],
+            "lng":data["lng"]
         })
 
         if len(route_history) > 200:
             route_history.pop(0)
 
-        # =========================
-        # STUDENT BOARDING ALERT
-        # =========================
-
         uid = data.get("uid")
 
-        if uid and uid != last_uid:
-
-            last_uid = uid
+        # save latest scanned UID
+        if uid:
+            last_scanned_uid = uid
 
             student = Student.query.filter_by(uid=uid).first()
 
             if student:
 
-                # Save attendance
                 record = Attendance(
                     student_name=student.name,
                     status="Boarded"
@@ -153,20 +146,17 @@ https://maps.google.com/?q={data['lat']},{data['lng']}
 
                 send_email(
                     student.parent_email,
-                    "Bus Boarding Alert",
+                    "🚌 Smart School Bus Alert",
                     message
                 )
 
-        # =========================
-        # ACCIDENT ALERT
-        # =========================
-
+        # accident alert
         if data.get("accident") == "Accident Detected":
 
             message = f"""
-EMERGENCY ALERT
+🚨 EMERGENCY ALERT
 
-Possible accident detected!
+Possible accident detected.
 
 Time: {datetime.now().strftime("%H:%M:%S")}
 
@@ -174,22 +164,31 @@ Location:
 https://maps.google.com/?q={data['lat']},{data['lng']}
 """
 
-            # Send to all parents
-            parents = Student.query.all()
+            send_email(
+                EMAIL_ADDRESS,
+                "🚨 Bus Accident Alert",
+                message
+            )
 
-            for p in parents:
-
-                send_email(
-                    p.parent_email,
-                    "Bus Accident Alert",
-                    message
-                )
-
-    return {"status": "ok"}
+    return {"status":"ok"}
 
 
 # ==============================
-# DATA API FOR DASHBOARD
+# GET LAST SCANNED UID
+# ==============================
+
+@app.route('/get_uid')
+def get_uid():
+
+    global last_scanned_uid
+
+    return jsonify({
+        "uid": last_scanned_uid
+    })
+
+
+# ==============================
+# DATA FOR DASHBOARD
 # ==============================
 
 @app.route('/data')
@@ -197,7 +196,9 @@ def data():
 
     return jsonify({
         "bus": bus_data,
-        "route": route_history
+        "route": route_history,
+        "last_uid": last_scanned_uid,
+        "raw_data": bus_data
     })
 
 
@@ -205,7 +206,7 @@ def data():
 # ADMIN LOGIN
 # ==============================
 
-@app.route('/admin', methods=['GET', 'POST'])
+@app.route('/admin', methods=['GET','POST'])
 def admin_login():
 
     if request.method == "POST":
@@ -259,7 +260,7 @@ def delete_student(id):
 # REGISTER STUDENT
 # ==============================
 
-@app.route('/register_student', methods=['GET', 'POST'])
+@app.route('/register_student', methods=['GET','POST'])
 def register_student():
 
     if "admin" not in session:
@@ -312,7 +313,7 @@ def attendance():
 # PARENT LOGIN
 # ==============================
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET','POST'])
 def parent_login():
 
     if request.method == "POST":

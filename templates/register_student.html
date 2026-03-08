@@ -53,6 +53,11 @@ font-weight:bold;
 margin-top:10px;
 }
 
+.scan-btn{
+background:#f59e0b;
+color:black;
+}
+
 .submit-btn{
 background:#38bdf8;
 color:black;
@@ -60,15 +65,6 @@ color:black;
 
 .submit-btn:hover{
 background:#0ea5e9;
-}
-
-.back-btn{
-background:#475569;
-color:white;
-}
-
-.back-btn:hover{
-background:#64748b;
 }
 
 </style>
@@ -85,7 +81,9 @@ background:#64748b;
 
 <input name="name" placeholder="Student Name" required>
 
-<input name="uid" placeholder="RFID UID (Scan from ESP32)" required>
+<input id="uid" name="uid" placeholder="RFID UID" required>
+
+<button type="button" class="scan-btn" onclick="scanCard()">Scan RFID Card</button>
 
 <input name="parent_name" placeholder="Parent Name" required>
 
@@ -99,13 +97,39 @@ background:#64748b;
 
 </form>
 
-<br>
-
-<a href="/admin">
-<button class="back-btn">Back to Admin</button>
-</a>
-
 </div>
+
+<script>
+
+function scanCard(){
+
+    alert("Please scan the RFID card now");
+
+    setTimeout(getUID,2000);
+
+}
+
+function getUID(){
+
+    fetch("/get_uid")
+    .then(response => response.json())
+    .then(data => {
+
+        if(data.uid){
+
+            document.getElementById("uid").value = data.uid;
+
+        } else {
+
+            alert("No card detected");
+
+        }
+
+    });
+
+}
+
+</script>
 
 </body>
 
