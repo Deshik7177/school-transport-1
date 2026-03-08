@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Admin Dashboard</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:#0f172a;
+color:white;
+text-align:center;
+}
+
+.container{
+width:95%;
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+h1{
+margin-bottom:20px;
+}
+
+.actions button{
+padding:12px 18px;
+margin:10px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+background:#38bdf8;
+color:black;
+}
+
+.actions button:hover{
+background:#0ea5e9;
+}
+
+.table-container{
+background:#1e293b;
+padding:20px;
+border-radius:12px;
+box-shadow:0 5px 15px rgba(0,0,0,0.4);
+overflow-x:auto;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th{
+background:#020617;
+padding:12px;
+}
+
+td{
+padding:10px;
+border-bottom:1px solid #334155;
+}
+
+tr:hover{
+background:#020617;
+}
+
+.delete-btn{
+background:#ef4444;
+color:white;
+padding:6px 12px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.delete-btn:hover{
+background:#dc2626;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🏫 School Admin Dashboard</h1>
+
+<div class="actions">
+
+<a href="/register_student">
+<button>Register New Student</button>
+</a>
+
+<a href="/attendance">
+<button>View Attendance</button>
+</a>
+
+<a href="/dashboard">
+<button>Live Bus Dashboard</button>
+</a>
+
+</div>
+
+<h2>Registered Students</h2>
+
+<div class="table-container">
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Student Name</th>
+<th>RFID UID</th>
+<th>Parent Name</th>
+<th>Parent Username</th>
+<th>Action</th>
+</tr>
+
+{% for s in students %}
+
+<tr>
+<td>{{s.id}}</td>
+<td>{{s.name}}</td>
+<td>{{s.uid}}</td>
+<td>{{s.parent_name}}</td>
+<td>{{s.parent_username}}</td>
+
+<td>
+<a href="/delete_student/{{s.id}}">
+<button class="delete-btn">Delete</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

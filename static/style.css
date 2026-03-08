@@ -1,0 +1,85 @@
+/* Basic style for smart bus system */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+    margin: 0;
+    padding: 0;
+}
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(44,62,80,0.12);
+}
+h1, h2 {
+    color: #2980b9;
+    margin-bottom: 24px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+}
+th, td {
+    border: 1px solid #dbeafe;
+    padding: 12px;
+    text-align: left;
+}
+th {
+    background: #2980b9;
+    color: #fff;
+}
+tr:nth-child(even) {
+    background: #f0f4f8;
+}
+button, input[type="submit"] {
+    background: #2980b9;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 8px 0;
+    transition: background 0.2s;
+}
+button:hover, input[type="submit"]:hover {
+    background: #3498db;
+}
+input, select {
+    padding: 10px;
+    border: 1px solid #dbeafe;
+    border-radius: 6px;
+    margin: 8px 0;
+    width: 100%;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+.card {
+    background: #f0f4f8;
+    padding: 20px;
+    margin: 12px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+    display: inline-block;
+    min-width: 220px;
+    color: #2c3e50;
+}
+@media (max-width: 600px) {
+    .container {
+        padding: 12px;
+    }
+    .card {
+        min-width: 100px;
+        padding: 12px;
+        font-size: 14px;
+    }
+    h1, h2 {
+        font-size: 22px;
+    }
+    th, td {
+        padding: 8px;
+    }
+}

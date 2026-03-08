@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Smart Bus Dashboard</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+
+body{
+margin:0;
+background:#0f172a;
+font-family:Arial, Helvetica, sans-serif;
+color:white;
+text-align:center;
+}
+
+.container{
+width:95%;
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+h1{
+margin-bottom:20px;
+}
+
+#map{
+height:420px;
+border-radius:12px;
+margin-bottom:25px;
+border:2px solid #1e293b;
+}
+
+.dashboard{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+}
+
+.card{
+background:#1e293b;
+padding:18px;
+border-radius:12px;
+box-shadow:0 5px 15px rgba(0,0,0,0.4);
+font-size:17px;
+}
+
+.title{
+color:#38bdf8;
+font-weight:bold;
+margin-bottom:6px;
+}
+
+.status-safe{
+color:#22c55e;
+font-weight:bold;
+}
+
+.status-warning{
+color:#f59e0b;
+font-weight:bold;
+}
+
+.status-danger{
+color:#ef4444;
+font-weight:bold;
+}
+
+.student-box{
+margin-top:10px;
+text-align:left;
+max-height:120px;
+overflow:auto;
+padding:6px;
+background:#020617;
+border-radius:6px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🚌 Smart Bus Monitoring Dashboard</h1>
+
+<div id="map"></div>
+
+<div class="dashboard">
+
+<div class="card">
+<div class="title">Speed</div>
+<span id="speed">0</span> km/h
+</div>
+
+<div class="card">
+<div class="title">Rash Driving</div>
+<span id="rash" class="status-safe">Normal</span>
+</div>
+
+<div class="card">
+<div class="title">Accident Status</div>
+<span id="accident" class="status-safe">Safe</span>
+</div>
+
+<div class="card">
+<div class="title">Roll Angle</div>
+<span id="roll">0</span> °
+</div>
+
+<div class="card">
+<div class="title">Pitch Angle</div>
+<span id="pitch">0</span> °
+</div>
+
+<div class="card">
+<div class="title">Gyroscope</div>
+<span id="gyro">0</span>
+</div>
+
+<div class="card">
+<div class="title">Students Onboard</div>
+<div id="students" class="student-box"></div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+var map = L.map('map').setView([0,0], 13);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{ maxZoom:19 }
+).addTo(map);
+
+var marker = L.marker([0,0]).addTo(map);
+
+var routeLine = L.polyline([], {color:'cyan'}).addTo(map);
+
+function updateData(){
+
+fetch("/data")
+
+.then(r=>r.json())
+
+.then(data=>{
+
+let bus = data.bus;
+
+// speed
+document.getElementById("speed").innerHTML = bus.speed;
+
+// rash driving
+let rashEl = document.getElementById("rash");
+rashEl.innerHTML = bus.rash;
+
+if(bus.rash.includes("Rash")){
+rashEl.className="status-warning";
+}else{
+rashEl.className="status-safe";
+}
+
+// accident
+let accidentEl = document.getElementById("accident");
+accidentEl.innerHTML = bus.accident;
+
+if(bus.accident.includes("Accident")){
+accidentEl.className="status-danger";
+}else{
+accidentEl.className="status-safe";
+}
+
+// orientation
+document.getElementById("roll").innerHTML = bus.roll;
+document.getElementById("pitch").innerHTML = bus.pitch;
+document.getElementById("gyro").innerHTML = bus.gyro;
+
+// students
+let s="";
+if(bus.students_onboard){
+bus.students_onboard.forEach(st=>{
+s += st.name + "<br>";
+});
+}
+document.getElementById("students").innerHTML=s;
+
+// map update
+marker.setLatLng([bus.lat, bus.lng]);
+map.setView([bus.lat,bus.lng]);
+
+// route path
+let points=[];
+data.route.forEach(p=>{
+points.push([p.lat,p.lng]);
+});
+routeLine.setLatLngs(points);
+
+// accident popup
+if(bus.accident == "Accident Detected"){
+alert("🚨 ACCIDENT DETECTED!");
+}
+
+});
+
+}
+
+setInterval(updateData,2000);
+
+</script>
+
+</body>
+
+</html>

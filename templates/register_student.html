@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Register Student</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body{
+margin:0;
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,#0f172a,#020617);
+font-family:Arial, Helvetica, sans-serif;
+color:white;
+}
+
+.container{
+background:#1e293b;
+padding:35px;
+border-radius:14px;
+width:340px;
+text-align:center;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+
+h2{
+margin-bottom:20px;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:8px 0;
+border:none;
+border-radius:8px;
+outline:none;
+font-size:15px;
+}
+
+button{
+padding:12px 20px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+margin-top:10px;
+}
+
+.submit-btn{
+background:#38bdf8;
+color:black;
+}
+
+.submit-btn:hover{
+background:#0ea5e9;
+}
+
+.back-btn{
+background:#475569;
+color:white;
+}
+
+.back-btn:hover{
+background:#64748b;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>👨‍🎓 Register New Student</h2>
+
+<form method="POST">
+
+<input name="name" placeholder="Student Name" required>
+
+<input name="uid" placeholder="RFID UID (Scan from ESP32)" required>
+
+<input name="parent_name" placeholder="Parent Name" required>
+
+<input name="parent_username" placeholder="Parent Login Username" required>
+
+<input name="parent_password" type="password" placeholder="Parent Login Password" required>
+
+<button type="submit" class="submit-btn">Register Student</button>
+
+</form>
+
+<br>
+
+<a href="/admin">
+<button class="back-btn">Back to Admin</button>
+</a>
+
+</div>
+
+</body>
+
+</html>
