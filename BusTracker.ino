@@ -1,5 +1,5 @@
 // ==============================
-// Smart Bus Tracker - ESP32
+// SMART BUS TRACKER - ESP32
 // ==============================
 
 #include <WiFi.h>
@@ -75,6 +75,7 @@ float speedKmph = 0;
 // ==============================
 
 String lastUID = "";
+bool newCardDetected = false;
 
 // ==============================
 // THRESHOLDS
@@ -108,6 +109,7 @@ void setupWiFi(){
   }
 
   Serial.println("\nWiFi Connected");
+  Serial.print("ESP32 IP: ");
   Serial.println(WiFi.localIP());
 }
 
@@ -130,6 +132,7 @@ void readRFID(){
   uid.toUpperCase();
 
   lastUID = uid;
+  newCardDetected = true;
 
   Serial.print("RFID UID: ");
   Serial.println(uid);
@@ -173,7 +176,7 @@ void readMPU(){
       rashStatus = "Driving Normal";
   }
 
-  // Accident
+  // Accident Detection
 
   if(accMag > accidentThreshold ||
      abs(gyroZValue) > accidentGyroThreshold){
@@ -231,7 +234,10 @@ void publishStatus(){
 
   doc["accMag"] = accMag;
 
-  doc["uid"] = lastUID;
+  // send UID only if new card detected
+  if(newCardDetected){
+    doc["uid"] = lastUID;
+  }
 
   String payload;
 
@@ -253,6 +259,9 @@ void publishStatus(){
     Serial.println(response);
 
     http.end();
+
+    // reset flag after sending
+    newCardDetected = false;
   }
 }
 
@@ -293,5 +302,4 @@ void loop(){
 
     lastPublish = millis();
   }
-
 }

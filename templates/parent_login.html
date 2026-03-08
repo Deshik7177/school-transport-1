@@ -84,9 +84,9 @@ text-decoration:none;
 
 <h2>👨‍👩‍👧 Parent Login</h2>
 
-<form method="POST">
+<form method="POST" onsubmit="saveChild()">
 
-<input name="username" placeholder="Parent Username" required>
+<input id="username" name="username" placeholder="Parent Username" required>
 
 <input name="password" type="password" placeholder="Password" required>
 
@@ -99,6 +99,18 @@ text-decoration:none;
 <a href="/"><button>Back to Main Login</button></a>
 
 </div>
+
+<script>
+
+function saveChild(){
+
+let user = document.getElementById("username").value;
+
+sessionStorage.setItem("child_name", user);
+
+}
+
+</script>
 
 </body>
 </html>

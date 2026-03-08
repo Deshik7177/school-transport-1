@@ -2,6 +2,7 @@
 
 <html>
 <head>
+
 <title>Parent Bus Dashboard</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,7 +20,7 @@ color:white;
 
 .container{
 width:95%;
-max-width:1100px;
+max-width:1200px;
 margin:auto;
 padding:20px;
 text-align:center;
@@ -30,7 +31,7 @@ margin-bottom:20px;
 }
 
 #map{
-height:400px;
+height:420px;
 border-radius:12px;
 margin-bottom:25px;
 border:2px solid #1e293b;
@@ -46,7 +47,7 @@ gap:15px;
 background:#1e293b;
 padding:18px;
 border-radius:12px;
-box-shadow:0 4px 12px rgba(0,0,0,0.4);
+box-shadow:0 5px 18px rgba(0,0,0,0.5);
 font-size:18px;
 }
 
@@ -72,7 +73,7 @@ font-weight:bold;
 }
 
 .child-badge{
-padding:5px 12px;
+padding:6px 14px;
 border-radius:8px;
 font-weight:bold;
 }
@@ -87,6 +88,12 @@ background:#ef4444;
 color:white;
 }
 
+.info{
+font-size:14px;
+color:#cbd5f5;
+margin-top:5px;
+}
+
 </style>
 
 </head>
@@ -95,30 +102,64 @@ color:white;
 
 <div class="container">
 
-<h1>🚌 Parent Bus Dashboard</h1>
+<h1>🚌 Parent Bus Monitoring Dashboard</h1>
 
 <div id="map"></div>
 
 <div class="dashboard">
 
 <div class="card">
-<div class="title">Speed</div>
+<div class="title">Bus Speed</div>
 <span id="speed">0</span> km/h
+<div class="info">Current vehicle speed</div>
 </div>
 
 <div class="card">
-<div class="title">Rash Driving</div>
-<span id="rash" class="status-safe">Normal</span>
+<div class="title">Driver Behavior</div>
+<span id="rash" class="status-safe">Driving Normal</span>
+<div class="info">Tilt / sharp turn detection</div>
 </div>
 
 <div class="card">
-<div class="title">Accident Status</div>
+<div class="title">Safety Status</div>
 <span id="accident" class="status-safe">Safe</span>
+<div class="info">Accident detection system</div>
 </div>
 
 <div class="card">
 <div class="title">Child Onboard</div>
 <span id="child" class="child-badge off">No</span>
+<div class="info">RFID attendance status</div>
+</div>
+
+<div class="card">
+<div class="title">Bus Roll Angle</div>
+<span id="roll">0</span> °
+<div class="info">Vehicle tilt left/right</div>
+</div>
+
+<div class="card">
+<div class="title">Bus Pitch Angle</div>
+<span id="pitch">0</span> °
+<div class="info">Vehicle tilt forward/back</div>
+</div>
+
+<div class="card">
+<div class="title">Gyroscope</div>
+<span id="gyro">0</span>
+<div class="info">Rotation measurement</div>
+</div>
+
+<div class="card">
+<div class="title">Last Update</div>
+<span id="time">--</span>
+<div class="info">System data refresh</div>
+</div>
+
+<div class="card">
+<div class="title">GPS Coordinates</div>
+<span id="coords">0 , 0</span>
+<div class="info">Bus location</div>
 </div>
 
 </div>
@@ -148,10 +189,10 @@ fetch("/data")
 
 let bus = data.bus;
 
-// SPEED
+// speed
 document.getElementById("speed").innerHTML = bus.speed;
 
-// RASH DRIVING STATUS
+// rash driving
 let rashEl = document.getElementById("rash");
 rashEl.innerHTML = bus.rash;
 
@@ -161,7 +202,7 @@ rashEl.className="status-warning";
 rashEl.className="status-safe";
 }
 
-// ACCIDENT STATUS
+// accident
 let accidentEl = document.getElementById("accident");
 accidentEl.innerHTML = bus.accident;
 
@@ -171,18 +212,34 @@ accidentEl.className="status-danger";
 accidentEl.className="status-safe";
 }
 
-// MAP UPDATE
+// orientation
+document.getElementById("roll").innerHTML = bus.roll;
+document.getElementById("pitch").innerHTML = bus.pitch;
+document.getElementById("gyro").innerHTML = bus.gyro;
+
+// coordinates
+document.getElementById("coords").innerHTML = bus.lat + " , " + bus.lng;
+
+// update time
+document.getElementById("time").innerHTML =
+new Date().toLocaleTimeString();
+
+// map
 marker.setLatLng([bus.lat, bus.lng]);
-map.setView([bus.lat, bus.lng]);
+map.setView([bus.lat,bus.lng]);
 
-// CHILD STATUS
-let child = sessionStorage.getItem("child_name");
+// child status
+let childName = sessionStorage.getItem("child_name");
 
-if(bus.students_onboard){
+let onboard=false;
 
-let onboard = bus.students_onboard.map(s=>s.name).includes(child);
+data.students.forEach(student=>{
+if(student.name===childName && student.status==="Boarded"){
+onboard=true;
+}
+});
 
-let childEl = document.getElementById("child");
+let childEl=document.getElementById("child");
 
 if(onboard){
 childEl.innerHTML="Yes";
@@ -190,8 +247,6 @@ childEl.className="child-badge on";
 }else{
 childEl.innerHTML="No";
 childEl.className="child-badge off";
-}
-
 }
 
 });

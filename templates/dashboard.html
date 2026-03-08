@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 
 <head>
@@ -74,14 +73,20 @@ color:#ef4444;
 font-weight:bold;
 }
 
-.student-box{
+.student-table{
+width:100%;
+border-collapse:collapse;
 margin-top:10px;
-text-align:left;
-max-height:120px;
-overflow:auto;
-padding:6px;
+}
+
+.student-table th{
 background:#020617;
-border-radius:6px;
+padding:8px;
+}
+
+.student-table td{
+padding:8px;
+border-bottom:1px solid #334155;
 }
 
 </style>
@@ -128,9 +133,22 @@ border-radius:6px;
 <span id="gyro">0</span>
 </div>
 
-<div class="card">
-<div class="title">Students Onboard</div>
-<div id="students" class="student-box"></div>
+<div class="card" style="grid-column:span 2">
+
+<div class="title">Student Bus Status</div>
+
+<table class="student-table">
+
+<tr>
+<th>Name</th>
+<th>RFID</th>
+<th>Status</th>
+</tr>
+
+<tbody id="students"></tbody>
+
+</table>
+
 </div>
 
 </div>
@@ -188,27 +206,41 @@ document.getElementById("roll").innerHTML = bus.roll;
 document.getElementById("pitch").innerHTML = bus.pitch;
 document.getElementById("gyro").innerHTML = bus.gyro;
 
-// students
-let s="";
-if(bus.students_onboard){
-bus.students_onboard.forEach(st=>{
-s += st.name + "<br>";
+// =====================
+// STUDENT TABLE
+// =====================
+
+let html="";
+
+data.students.forEach(st=>{
+
+let color = st.status == "Boarded" ? "#22c55e" : "#ef4444";
+
+html += `
+<tr>
+<td>${st.name}</td>
+<td>${st.uid}</td>
+<td style="color:${color};font-weight:bold">${st.status}</td>
+</tr>
+`;
+
 });
-}
-document.getElementById("students").innerHTML=s;
+
+document.getElementById("students").innerHTML = html;
 
 // map update
 marker.setLatLng([bus.lat, bus.lng]);
 map.setView([bus.lat,bus.lng]);
 
-// route path
+// route
 let points=[];
 data.route.forEach(p=>{
 points.push([p.lat,p.lng]);
 });
+
 routeLine.setLatLngs(points);
 
-// accident popup
+// accident alert
 if(bus.accident == "Accident Detected"){
 alert("🚨 ACCIDENT DETECTED!");
 }
@@ -222,5 +254,4 @@ setInterval(updateData,2000);
 </script>
 
 </body>
-
 </html>

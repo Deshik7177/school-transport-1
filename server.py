@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
+import time
 
 app = Flask(__name__)
 app.secret_key = "bus_secret"
@@ -30,11 +31,9 @@ def send_email(receiver, subject, message):
         server = smtplib.SMTP("smtp.gmail.com",587)
 
         server.starttls()
-
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
 
         server.send_message(msg)
-
         server.quit()
 
         print("Email sent to", receiver)
@@ -67,6 +66,7 @@ class Attendance(db.Model):
 
     student_name = db.Column(db.String(100))
     status = db.Column(db.String(20))
+    time = db.Column(db.String(50))
 
 
 # ==============================
@@ -79,17 +79,21 @@ bus_data = {
     "speed":0,
     "rash":"Driving Normal",
     "accident":"Safe",
+    "roll":0,
+    "pitch":0,
+    "gyro":0,
     "students_onboard":[]
 }
 
 route_history = []
 
-# store latest scanned card
-last_scanned_uid = None
+# RFID spam protection
+last_uid = None
+last_scan_time = 0
 
 
 # ==============================
-# ESP32 DATA ENDPOINT
+# ESP32 UPDATE ENDPOINT
 # ==============================
 
 @app.route('/update', methods=['POST'])
@@ -97,17 +101,28 @@ def update():
 
     global bus_data
     global route_history
-    global last_scanned_uid
+    global last_uid
+    global last_scan_time
 
     data = request.json
 
     if data:
 
-        bus_data = data
+        print("ESP32 DATA:", data)
+
+        # Update sensor values WITHOUT deleting other fields
+        bus_data["lat"] = data.get("lat",0)
+        bus_data["lng"] = data.get("lng",0)
+        bus_data["speed"] = data.get("speed",0)
+        bus_data["rash"] = data.get("rash","Driving Normal")
+        bus_data["accident"] = data.get("accident","Safe")
+        bus_data["roll"] = data.get("roll",0)
+        bus_data["pitch"] = data.get("pitch",0)
+        bus_data["gyro"] = data.get("gyro",0)
 
         route_history.append({
-            "lat":data["lat"],
-            "lng":data["lng"]
+            "lat":bus_data["lat"],
+            "lng":bus_data["lng"]
         })
 
         if len(route_history) > 200:
@@ -115,23 +130,57 @@ def update():
 
         uid = data.get("uid")
 
-        # save latest scanned UID
         if uid:
-            last_scanned_uid = uid
+
+            current_time = time.time()
+
+            # Ignore repeated scan within 5 seconds
+            if uid == last_uid and current_time - last_scan_time < 5:
+                return {"status":"ignored"}
+
+            last_uid = uid
+            last_scan_time = current_time
 
             student = Student.query.filter_by(uid=uid).first()
 
             if student:
 
-                record = Attendance(
-                    student_name=student.name,
-                    status="Boarded"
-                )
+                onboard = False
 
-                db.session.add(record)
-                db.session.commit()
+                for s in bus_data["students_onboard"]:
+                    if s["name"] == student.name:
+                        onboard = True
 
-                message = f"""
+                if onboard:
+
+                    # STUDENT DROPPED
+                    bus_data["students_onboard"] = [
+                        s for s in bus_data["students_onboard"]
+                        if s["name"] != student.name
+                    ]
+
+                    status = "Dropped"
+
+                    message = f"""
+Smart Bus Notification
+
+Student: {student.name}
+
+Has left the school bus.
+
+Time: {datetime.now().strftime("%H:%M:%S")}
+"""
+
+                else:
+
+                    # STUDENT BOARDED
+                    bus_data["students_onboard"].append({
+                        "name": student.name
+                    })
+
+                    status = "Boarded"
+
+                    message = f"""
 Smart Bus Notification
 
 Student: {student.name}
@@ -141,17 +190,26 @@ Boarded the school bus.
 Time: {datetime.now().strftime("%H:%M:%S")}
 
 Location:
-https://maps.google.com/?q={data['lat']},{data['lng']}
+https://maps.google.com/?q={bus_data['lat']},{bus_data['lng']}
 """
+
+                record = Attendance(
+                    student_name=student.name,
+                    status=status,
+                    time=datetime.now().strftime("%H:%M:%S")
+                )
+
+                db.session.add(record)
+                db.session.commit()
 
                 send_email(
                     student.parent_email,
-                    "🚌 Smart School Bus Alert",
+                    "🚌 Smart School Bus Notification",
                     message
                 )
 
-        # accident alert
-        if data.get("accident") == "Accident Detected":
+        # Accident alert
+        if bus_data["accident"] == "Accident Detected":
 
             message = f"""
 🚨 EMERGENCY ALERT
@@ -161,7 +219,7 @@ Possible accident detected.
 Time: {datetime.now().strftime("%H:%M:%S")}
 
 Location:
-https://maps.google.com/?q={data['lat']},{data['lng']}
+https://maps.google.com/?q={bus_data['lat']},{bus_data['lng']}
 """
 
             send_email(
@@ -174,33 +232,47 @@ https://maps.google.com/?q={data['lat']},{data['lng']}
 
 
 # ==============================
-# GET LAST SCANNED UID
-# ==============================
-
-@app.route('/get_uid')
-def get_uid():
-
-    global last_scanned_uid
-
-    return jsonify({
-        "uid": last_scanned_uid
-    })
-
-
-# ==============================
-# DATA FOR DASHBOARD
+# DASHBOARD DATA
 # ==============================
 
 @app.route('/data')
 def data():
 
+    students = Student.query.all()
+
+    student_list = []
+
+    onboard_list = bus_data.get("students_onboard", [])
+
+    for s in students:
+
+        status = "Dropped"
+
+        for onboard in onboard_list:
+            if onboard["name"] == s.name:
+                status = "Boarded"
+
+        student_list.append({
+            "name": s.name,
+            "uid": s.uid,
+            "status": status
+        })
+
     return jsonify({
         "bus": bus_data,
         "route": route_history,
-        "last_uid": last_scanned_uid,
-        "raw_data": bus_data
+        "students": student_list
     })
 
+
+@app.route('/get_uid')
+def get_uid():
+
+    global last_uid
+
+    return jsonify({
+        "uid": last_uid
+    })
 
 # ==============================
 # ADMIN LOGIN
@@ -244,9 +316,6 @@ def admin_dashboard():
 @app.route('/delete_student/<int:id>')
 def delete_student(id):
 
-    if "admin" not in session:
-        return redirect("/admin")
-
     student = Student.query.get(id)
 
     if student:
@@ -262,9 +331,6 @@ def delete_student(id):
 
 @app.route('/register_student', methods=['GET','POST'])
 def register_student():
-
-    if "admin" not in session:
-        return redirect("/admin")
 
     if request.method == "POST":
 
@@ -300,9 +366,6 @@ def register_student():
 
 @app.route('/attendance')
 def attendance():
-
-    if "admin" not in session:
-        return redirect("/admin")
 
     records = Attendance.query.all()
 
@@ -345,7 +408,7 @@ def parent_dashboard():
 
 
 # ==============================
-# LIVE BUS DASHBOARD
+# LIVE DASHBOARD
 # ==============================
 
 @app.route('/dashboard')
